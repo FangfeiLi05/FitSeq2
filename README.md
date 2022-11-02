@@ -1,23 +1,21 @@
-# FitSeq2.0
 [![Python 3.8](https://img.shields.io/badge/Python-3.8-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Contact Info](https://img.shields.io/badge/Contact-fangfeili0525@gmail.com-blue.svg)]()
 
+# FitSeq2.0
 
-## FitMut2
+## 1. What is FitSeq2.0?
 
-### 1. What is FitMut2?
-
-FitMut2 is an improved version of FitMut1. FitMut1 is a Python reimplementation version of the [Mathematica](https://www.wolfram.com/mathematica/) tool that developed for identifying adaptive mutations that established in barcoded evolution experiments, and inferring their mutational parameters (fitness effect and establishment time) (see more details of FitMut1 in reference: [S. F. Levy, et al. Quantitative evolutionary dynamics using high-resolution lineage tracking. Nature, 519(7542): 181-186 (2015)](https://www.nature.com/articles/nature14279). If you use this software, please reference: [bioRxiv](). FitMut2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+FitSeq2.0 is a Python-based fitness estimation tool for pooled amplicon sequencing studies. It is an improved version of the MATLAB tool [FitSeq](https://github.com/sashaflevy/Fit-Seq). FitSeq2.0 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 It currently has two main functions:
-* `fitmutsimu_run_v1.py` simulates the entire experimental process of barcode-sequencing (bar-seq) evolution experiment. 
-* `fitmut2_run_v1.py` identifies adaptive mutations (as well as inferring their fitness effects and establishment times) that established in bar-seq evolution experiments from read-count time-series data.
+* `fitseqsimu_run_v1.py` simulates the entire experimental process of competitve pooled growth of a population of genotypes.
+* `fitseq2_run_v1.py` calculates the fitness of each genotype from read-count time-series data.
 
-A walk-through is included as the jupyter notebook [here](https://github.com/FangfeiLi05/FitMut2/blob/master/walk_through/walk_through.ipynb).
+A walk-through is included as the jupyter notebook [here](https://github.com/FangfeiLi05/FitSeq2.0/blob/master/walk_through/walk_through.ipynb).
 
 
-### 2. How to install FitMut2?
+### 2. How to install FitSeq2.0?
 
 * Python 3 is required. This version has been tested on a MacBook Pro (Apple M1 Chip, 8 GB Memeory), with Python 3.8.5.
 * Clone this repository by running `git clone https://github.com/FangfeiLi05/FitMut2.git` in terminal.
@@ -25,10 +23,10 @@ A walk-through is included as the jupyter notebook [here](https://github.com/Fan
 * Install dependencies by running `pip install -r requirements.txt` in terminal.
 
 
-### 3. How to use FitMut2?
+### 3. How to use FitSeq2.0?
 
 #### 3.1. Evolution Simulation
-`fitmutsimu_run_v1.py` simulates the entire experimental process of barcode-sequencing (bar-seq) evolution experiment with serial dilution of a barcoded cell population. This simulation includes all sources of noise, including growth noise, noise from cell transfers, DNA extraction, PCR, and sequencing.
+`fitseqsimu_run_v1.py` simulates the entire experimental process of competative pooled growth of a population of genotypes with different fitnesses. This simulation includes all sources of noise, including growth noise, noise from cell transfers, DNA extraction, PCR, and sequencing.
 
 ##### Options
 * `--linegaes_number` or `-l`: number of lineages
