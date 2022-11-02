@@ -72,25 +72,23 @@ python fitseqsimu_run_v1.py -t simu_input_time_points.csv -s simu_input_fitness.
 * `--output_filename` or `-o`: prefix of output files' (`default: output`)
 
 ##### Outputs
-* `output_MutSeq_Result.csv`: a .csv file, with
-  + 1st column of .csv: estimated fitness effect of each lineage
-  + 2nd column of .csv: estimated establishment time of each lineage
-  + 3rd column of .csv: theoretical estimation error for fitness effect
-  + 4th column of .csv: theoretical estimation error for establishment time
-  + 5th column of .csv: probability of each lineage containing an adaptive mutation
+* `output_filename_FitSeq_Result.csv`: a .csv file, with
+  + 1st column of .csv: estimated fitness of each genotype
+  + 2nd column of .csv: theoretical estimation error for fitness
+  + 3rd column of .csv: estimated initial cell number each genotype
+  + 4th column of .csv: theoretical estimation error for initial cell number 
+  + 5th column of .csv: maximized likelihood value (log-scale) for each genotype
   + 6th column of .csv: estimated mean fitness per sequenced time point
-  + 7th column of .csv: estimated kappa per sequenced time point
-  + 8th column of .csv: estimated fraction of mutant cells of the population per sequenced time point
-* `output_Mean_fitness_Result.csv`: estimated mean fitness at each iteration
-* `output_Cell_Number_Mutant_Estimated.csv`: estimated effective number of mutant cells per barcode for each time point
-* `output_Cell_Number.csv`: effective cell number per barcode for each time point 
+  + 7th column of .csv: inference time for each iteration
+* `output_filename_Mean_fitness_Result.csv`: estimated mean fitness at each iteration
+* `output_filename_Read_Number_Estimated.csv`: estimated read number per genotype for each time point
 
 ##### For Help
 ```
-python fitmut2_run_v1.py --help
+python fitseq2_run_v1.py --help
 ```  
 
 ##### Examples
 ```
-python fitmut2_run_v1.py -i simu_test_EvoSimulation_Read_Number.csv -t fitmut_input_time_points.csv -o test
+python fitseq2_run_v1.py -i simu_test_EvoSimulation_Read_Number.csv -t fitseq_input_time_points.csv -o test
 ```
