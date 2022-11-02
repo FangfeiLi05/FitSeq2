@@ -50,7 +50,7 @@ A walk-through is included as the jupyter notebook [here](https://github.com/Fan
 python fitseqsimu_run_v1.py --help
 ```
 
-##### Examples
+##### Example
 ```
 python fitseqsimu_run_v1.py -t simu_input_time_points.csv -s simu_input_fitness.csv -o test
 ```    
@@ -88,7 +88,7 @@ python fitseqsimu_run_v1.py -t simu_input_time_points.csv -s simu_input_fitness.
 python fitseq2_run_v1.py --help
 ```  
 
-##### Examples
+##### Example
 ```
 python fitseq2_run_v1.py -i simu_test_EvoSimulation_Read_Number.csv -t fitseq_input_time_points.csv -o test
 ```
