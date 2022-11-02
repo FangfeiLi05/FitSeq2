@@ -63,14 +63,12 @@ python fitseqsimu_run_v1.py -t simu_input_time_points.csv -s simu_input_fitness.
 * `--input` or `-i`: a .csv file, with each column being the read number per barcode at each sequenced time-point
 * `--t_seq` or `-t`: a .csv file, with
   + 1st column: sequenced time-points evaluated in number of generations
-  + 2nd column: total effective number of cells of the population for each sequenced time-point
-* `--mutation_rate` or `-u`: total beneficial mutation rate (`default: 1e-5`)
-* `--delta_t` or `-dt`: number of generations between bottlenecks (`default: 8`)
+  + 2nd column: total effective number of cells of the population for each sequenced time-point (cell number at the bottleneck)
+* `--delta_t` or `-dt`: number of generations between bottlenecks (`default: the 2nd sequenced time-point - the 1st sequenced time-point`)
 * `--c` or `-c`: half of variance introduced by cell growth and cell transfer' (`default: 1`)
 * `--maximum_iteration_number` or `-n`: maximum number of iterations (`default: 50`)
-* `--opt_algorithm` or `-a`: optmization algorithm (nelder_mead or differential_evolution) (`default: nelder_mead`)
+* `--opt_algorithm` or `-a`: optmization algorithm (differential_evolution or nelder_mead) (`default: differential_evolution`)
 * `--parallelize` or `-p`: whether to use multiprocess module to parallelize inference across lineages (`default: True`)
-* `--save_steps` or `-s`: whether to output files in intermediate step of iterations (`default: False`)
 * `--output_filename` or `-o`: prefix of output files' (`default: output`)
 
 ##### Outputs
