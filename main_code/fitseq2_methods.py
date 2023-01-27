@@ -34,8 +34,6 @@ class FitSeq:
         self.seq_num = len(self.t_seq)
         self.cell_depth_seq = cell_depth_seq
         self.ratio = np.true_divide(self.read_depth_seq, self.cell_depth_seq)
-        self.cell_num_seq = self.read_num_seq / self.ratio
-        self.cell_num_seq[self.cell_num_seq < 1] = 1 
         self.read_num_seq[self.read_num_seq < 1] = 1 # approximate distribution is not accurate when r < 1
 
         self.delta_t = delta_t
@@ -45,16 +43,19 @@ class FitSeq:
         self.output_filename = output_filename
 
         # set bounds for the optimization
-        self.bounds = Bounds([1e-8, -1], [np.max(self.cell_num_seq[:,0])*10, 1])
+        self.bounds = Bounds([1e-8, -1], [np.max(self.read_num_seq[:,0])/self.ratio[0]*10, 1])
         
         # define other variables
         self.kappa_seq = 2.5 * np.ones(self.seq_num)
+        
+        #self.regression_num = 2
+        self.read_freq_seq = self.read_num_seq / self.read_depth_seq
 
         #self.noise_c = c / self.delta_t # self.noise_c: noise per generation, c: noise per cycle           
         self.noise_c_seq = (self.t_seq[1:] - self.t_seq[:-1]) / self.delta_t * c # per cycle
         
         read_num_mean = np.mean(self.read_num_seq[:,0])
-        cell_num_mean = np.mean(self.cell_num_seq[:,0])
+        cell_num_mean = self.cell_depth_seq[0] / self.lineages_num
         self.noise_beta = (read_num_mean/cell_num_mean + 2*read_num_mean/100 + 1)/2
         
         
@@ -131,8 +132,8 @@ class FitSeq:
     ##########
     def function_prior_loglikelihood_scaler(self, n0, s):
         """
-        Calculate log-likelihood value of a lineage given s and tau.
-        Inputs: s(scaler)
+        Calculate log-likelihood value of a lineage given s and n0.
+        Inputs: s (scaler)
         Output: log-likelihood value of all time poins (scaler)
         """
         tmp_kappa_reverse = 1/self.noise_beta
@@ -157,7 +158,7 @@ class FitSeq:
     ##########
     def function_prior_loglikelihood_opt(self, x):
         """
-        Calculate posterior log-likelihood value of a lineage given s and tau in optimization
+        Calculate log-likelihood value of a lineage given s and n0 in optimization
         """
         output = self.function_prior_loglikelihood_scaler(x[0], x[1])
 
@@ -169,10 +170,9 @@ class FitSeq:
     def function_parallel(self, i): 
         """
         i: lineage label
-        calculate probability first, then for adaptive lineage output optimized s and tau
+        Output optimized s and n0 for each lineage i
         """
         self.read_num_seq_lineage = self.read_num_seq[i, :]
-        self.cell_num_seq_lineage = self.cell_num_seq[i, :]
         
         if self.opt_algorithm == 'differential_evolution':
             opt_output = differential_evolution(func = self.function_prior_loglikelihood_opt,
@@ -230,7 +230,6 @@ class FitSeq:
     def function_estimation_error(self):
         for i in range(self.lineages_num):
             self.read_num_seq_lineage = self.read_num_seq[i, :]
-            self.cell_num_seq_lineage = self.cell_num_seq[i, :]
                 
             s_opt = self.result_s[i]
             n0_opt = self.result_n0[i]
@@ -242,37 +241,36 @@ class FitSeq:
     ##########
     def function_update_mean_fitness(self, k_iter):
         """
-        Updated mean fitness & mutant fraction
+        Updated mean fitness
         """
-        self.mutant_fraction_numerator = np.zeros(self.seq_num, dtype=float)
+        x_mean = np.sum(self.read_freq_seq * np.tile(self.result_s, (self.seq_num, 1)).T, axis=0)
+        self.x_mean_seq_dict[k_iter] = x_mean - x_mean[0]
+        #self.result_s = self.result_s - x_mean[0]
+        
         self.cell_num_seq_theory = np.zeros(np.shape(self.read_num_seq), dtype=float)
-
         for i in range(self.lineages_num):
             self.read_num_seq_lineage = self.read_num_seq[i, :]
-            self.cell_num_seq_lineage = self.cell_num_seq[i, :]
             output = self.function_prior_loglikelihood_scaler_subfunction(self.result_n0[i], self.result_s[i])
             self.cell_num_seq_theory[i,1:] = output['optimal']
             self.cell_num_seq_theory[i,0] = self.result_n0[i]
-            
+        self.read_num_seq_theory = self.cell_num_seq_theory * self.ratio
+        
         #x_mean_tmp = np.sum(self.cell_num_seq_theory * np.tile(self.result_s, (self.seq_num, 1)).T, axis=0)
         #x_mean = x_mean_tmp / np.sum(self.cell_num_seq_theory, axis=0)
-        x_mean_tmp = np.sum(self.cell_num_seq * np.tile(self.result_s, (self.seq_num, 1)).T, axis=0)
-        x_mean = x_mean_tmp / np.sum(self.cell_num_seq, axis=0)
+        #self.x_mean_seq_dict[k_iter] = x_mean - x_mean[0]
+        
 
-        self.x_mean_seq_dict[k_iter] = x_mean - x_mean[0]
-        #self.x_mean_seq_dict[k_iter] = x_mean
-
-        self.read_num_seq_theory = self.cell_num_seq_theory * self.ratio
+        
 
         
     
     ##########
     def function_run_iteration(self):
         """
-        run a single interation
+        Run a single interation
+        Run optimization for each lineages to find their optimized s & n0
         """
-        # Calculate proability for each lineage to find adaptive lineages, 
-        # Then run optimization for adaptive lineages to find their optimized s & tau for adaptive lineages
+        
         if self.parallelize:
             pool_obj = Pool() # might need to change processes=8
             output_tmp = pool_obj.map(self.function_parallel, tqdm(range(self.lineages_num)))
@@ -297,7 +295,7 @@ class FitSeq:
         self.prior_loglikelihood = np.zeros(self.lineages_num)
         for i in range(self.lineages_num):
             self.read_num_seq_lineage = self.read_num_seq[i, :]
-            self.cell_num_seq_lineage = self.cell_num_seq[i, :]
+            
             self.prior_loglikelihood[i] = self.function_prior_loglikelihood_scaler(self.result_n0[i], self.result_s[i])
 
 
@@ -348,19 +346,33 @@ class FitSeq:
         self.prior_loglikelihood = np.zeros(self.lineages_num, dtype=float)
         self.read_num_seq_theory = np.zeros((self.lineages_num, self.seq_num), dtype=float)
         
+        # choice_1 (without linear regression)
         self.x_mean_seq_dict = {0: 1e-8 * np.ones(self.seq_num, dtype=float)}
+        
+        # choice_2 (with linear regression)
+        # linear regression of the first two time points:
+        #if self.regression_num == 2:
+        #    tmp = (self.read_freq_seq[:, 1] - self.read_freq_seq[:, 0]) / (self.t_seq[1] - self.t_seq[0])
+        #else:
+        #    tmp = [regression_output.slope for i in range(self.lineages_num) for regression_output in
+        #           [linregress(self.t_seq[0:self.regression_num], np.log(self.read_freq_seq[i, 0:self.regression_num]))]]
+
+        #tmp = tmp - np.dot(self.read_freq_seq[:, 0], tmp)  # Normalization
+        #tmp = np.tile(tmp, (self.seq_num, 1)).T
+        #self.x_mean_seq = np.sum(tmp * self.read_freq_seq, axis=0)
+        #self.x_mean_seq_dict = {0: self.x_mean_seq}
+        
 
         for k_iter in range(1, self.max_iter_num+1):
             start_iter = time.time()
             print(f'--- iteration {k_iter} ...')
 
             self.x_mean_seq = self.x_mean_seq_dict[k_iter-1]
-            #self.x_mean_seq = np.exp(self.x_mean_seq) - 1
      
             output_result_old = {'FitSeq_Result': {'Fitness': np.copy(self.result_s), 
-                                                    'Error_Fitness': np.copy(self.error_s),
+                                                    #'Error_Fitness': np.copy(self.error_s),
                                                     'Cell_Number': np.copy(self.result_n0),
-                                                    'Error_Cell_Number': np.copy(self.error_n0),
+                                                    #'Error_Cell_Number': np.copy(self.error_n0),
                                                     'Log_Likelihood_Value': np.copy(self.prior_loglikelihood), 
                                                     'Mean_Fitness': np.copy(self.x_mean_seq_dict[k_iter-1]), # prior
                                                     'Kappa_Value': np.copy(self.kappa_seq), 
@@ -370,7 +382,7 @@ class FitSeq:
                
             self.function_sum_term()
             self.function_run_iteration()
-            self.function_estimation_error()
+            #self.function_estimation_error()
             self.function_prior_loglikelihood_iteration()
             self.function_update_mean_fitness(k_iter)
             

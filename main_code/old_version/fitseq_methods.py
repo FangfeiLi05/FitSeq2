@@ -32,8 +32,6 @@ class FitSeq:
         self.seq_num = len(self.t_seq)
         self.cell_depth_seq = cell_depth_seq
         self.ratio = np.true_divide(self.read_depth_seq, self.cell_depth_seq)
-        self.cell_num_seq = self.read_num_seq / self.ratio
-        self.cell_num_seq[self.cell_num_seq < 1] = 1 
         self.read_num_seq[self.read_num_seq < 1] = 1 # approximate distribution is not accurate when r < 1
 
         self.opt_algorithm = opt_algorithm
@@ -69,48 +67,44 @@ class FitSeq:
 
 
     ##########
-    def function_cell_num_theory_scaler(self, s):
+    def function_read_num_theory_scaler(self, s):
         """
-        Estimate cell number & mutant cell number all time points for a lineage given s and tau. 
+        Estimate read number all time points for a lineage given s.
         Inputs: s (scaler)
-        Output: {'cell_number': (array, vector)}
-        """            
-        cell_num_seq_lineage_observed = self.cell_num_seq_lineage
-        
-        cell_num_seq_lineage_theory = np.zeros(self.seq_num, dtype=float)
-        cell_num_seq_lineage_theory[0] = cell_num_seq_lineage_observed[0]
+        Output: {'read_number': (array, vector)}
+        """
+        read_num_seq_lineage_theory = np.zeros(self.seq_num, dtype=float)
+        read_num_seq_lineage_theory[0] = self.read_num_seq_lineage[0]
         
         for k in range(1, self.seq_num):
             sum_term_tk_minus_tkminus1 = self.sum_term_t_seq[k-1]
             all_tmp1 = np.exp(s * (self.t_seq[k] - self.t_seq[k-1])) * sum_term_tk_minus_tkminus1
-            cell_num_seq_lineage_theory[k] = np.multiply(cell_num_seq_lineage_observed[k-1], all_tmp1)       
+            read_num_seq_lineage_theory[k] = np.multiply(self.read_num_seq_lineage[k-1]/self.ratio[k-1]*self.ratio[k], all_tmp1)
             
-        output = {'cell_number': cell_num_seq_lineage_theory}
+        output = {'read_number': read_num_seq_lineage_theory}
 
         return output
     
 
 
     ##########
-    def function_cell_num_theory_array(self, s_array):
+    def function_read_num_theory_array(self, s_array):
         """
-        Estimate cell number & mutant cell number all time points for a lineage given s and tau. 
+        Estimate read number all time points for a lineage given s.
         Inputs: s_array (array, vector)
-        Output: {'cell_number': (array, 2D matrix)}
+        Output: {'read_number': (array, 2D matrix)}
         """
         s_len = len(s_array)
-            
-        cell_num_seq_lineage_observed = np.tile(self.cell_num_seq_lineage, (s_len, 1))
         
-        cell_num_seq_lineage_theory = np.zeros((s_len, self.seq_num), dtype=float)
-        cell_num_seq_lineage_theory[:,0] = cell_num_seq_lineage_observed[:,0]
+        read_num_seq_lineage_theory = np.zeros((s_len, self.seq_num), dtype=float)
+        read_num_seq_lineage_theory[:,0] = cself.read_num_seq_lineage[0]
 
         for k in range(1, self.seq_num):
             sum_term_tk_minus_tkminus1 = self.sum_term_t_seq[k-1]
             all_tmp1 = np.exp(s_array * (self.t_seq[k] - self.t_seq[k-1])) * sum_term_tk_minus_tkminus1
-            cell_num_seq_lineage_theory[:,k] = np.multiply(cell_num_seq_lineage_observed[:,k-1], all_tmp1)       
+            cell_num_seq_lineage_theory[:,k] = np.multiply(self.read_num_seq_lineage[k-1]/self.ratio[k-1]*self.ratio[k], all_tmp1)
     
-        output = {'cell_number': cell_num_seq_lineage_theory}
+        output = {'read_number': read_num_seq_lineage_theory}
 
         return output
 
@@ -119,13 +113,12 @@ class FitSeq:
     ##########
     def function_prior_loglikelihood_scaler(self, s):
         """
-        Calculate log-likelihood value of a lineage given s and tau.
+        Calculate log-likelihood value of a lineage given s.
         Inputs: s(scaler)
         Output: log-likelihood value of all time poins (scaler)
         """        
-        output = self.function_cell_num_theory_scaler(s)
-        cell_num_seq_lineage_theory = output['cell_number']
-        read_num_seq_lineage_theory = np.multiply(cell_num_seq_lineage_theory, self.ratio)
+        output = self.function_read_num_theory_scaler(s)
+        read_num_seq_lineage_theory = output['read_number']
         read_num_seq_lineage_theory[read_num_seq_lineage_theory < 1] = 1
         
         tmp_kappa_reverse = 1/self.kappa_seq
@@ -151,15 +144,14 @@ class FitSeq:
     ##########
     def function_prior_loglikelihood_array(self, s_array):
         """
-        Calculate log-likelihood value of a lineage given s and tau.
+        Calculate log-likelihood value of a lineage given s.
         Inputs: s_array (array, vector)
         Output: log-likelihood value of all time poins (array, vector)
         """
         s_len = len(s_array)
 
-        output = self.function_cell_num_theory_array(s_array)
-        cell_num_seq_lineage_theory = output['cell_number'] #(s_len, eq_num)
-        read_num_seq_lineage_theory = np.multiply(cell_num_seq_lineage_theory, np.tile(self.ratio, (s_len, 1)))
+        output = self.function_read_num_theory_array(s_array)
+        read_num_seq_lineage_theory = output['read_number'] #(s_len, eq_num)
         read_num_seq_lineage_theory[read_num_seq_lineage_theory < 1] = 1
         
         tmp_kappa_reverse = np.tile(1/self.kappa_seq, (s_len, 1))
@@ -188,9 +180,8 @@ class FitSeq:
         Inputs: s(scaler)
         Output: log-likelihood value of all time poins (scaler)
         """
-        output = self.function_cell_num_theory_scaler(s)
-        cell_num_seq_lineage_theory = output['cell_number']
-        read_num_seq_lineage_theory = np.multiply(cell_num_seq_lineage_theory, self.ratio)
+        output = self.function_read_num_theory_scaler(s)
+        read_num_seq_lineage_theory = output['read_number']
         read_num_seq_lineage_theory[read_num_seq_lineage_theory < 1] = 1
         
 
@@ -208,15 +199,14 @@ class FitSeq:
     ##########
     def function_prior_loglikelihood_array_approx(self, s_array):
         """
-        Calculate log-likelihood value of a lineage given s and tau.
+        Calculate log-likelihood value of a lineage given s.
         Inputs: s_array (array, vector)
         Output: log-likelihood value of all time poins (array, vector)
         """
         s_len = len(s_array)
 
-        output = self.function_cell_num_theory_array(s_array)
-        cell_num_seq_lineage_theory = output['cell_number']
-        read_num_seq_lineage_theory = np.multiply(cell_num_seq_lineage_theory, np.tile(self.ratio, (s_len, 1)))
+        output = self.function_read_num_theory_array(s_array)
+        read_num_seq_lineage_theory = output['read_number']
         read_num_seq_lineage_theory[read_num_seq_lineage_theory < 1] = 1
         
         tmp_kappa = np.tile(self.kappa_seq, (s_len, 1))
@@ -236,7 +226,7 @@ class FitSeq:
     ##########
     def function_prior_loglikelihood_opt(self, s):
         """
-        Calculate posterior log-likelihood value of a lineage given s and tau in optimization
+        Calculate log-likelihood value of a lineage given s in optimization
         """
         #output = self.function_prior_loglikelihood_scaler(s)
         output = self.function_prior_loglikelihood_scaler_approx(s)
@@ -249,10 +239,9 @@ class FitSeq:
     def function_parallel(self, i): 
         """
         i: lineage label
-        calculate probability first, then for adaptive lineage output optimized s and tau
+        Output optimized s for each lineage i
         """
         self.read_num_seq_lineage = self.read_num_seq[i, :]
-        self.cell_num_seq_lineage = self.cell_num_seq[i, :]
         
         if self.opt_algorithm == 'differential_evolution':
             opt_output = differential_evolution(func = self.function_prior_loglikelihood_opt,
@@ -282,26 +271,22 @@ class FitSeq:
     ##########
     def function_update_mean_fitness(self, k_iter):
         """
-        Updated mean fitness & mutant fraction
+        Updated mean fitness
         """
-        self.mutant_fraction_numerator = np.zeros(self.seq_num, dtype=float)
-        self.cell_num_seq_theory = np.zeros(np.shape(self.read_num_seq), dtype=float)
-       
+        x_mean = np.sum(self.read_freq_seq * np.tile(self.result_s, (self.seq_num, 1)).T, axis=0)
+        self.x_mean_seq_dict[k_iter] = x_mean - x_mean[0]
+        #self.result_s = self.result_s - x_mean[0]
+        
+        self.read_num_seq_theory = np.zeros(np.shape(self.read_num_seq), dtype=float)
         for i in range(self.lineages_num):
             self.read_num_seq_lineage = self.read_num_seq[i, :]
-            self.cell_num_seq_lineage = self.cell_num_seq[i, :]
-            output = self.function_cell_num_theory_scaler(self.result_s[i])
-            self.cell_num_seq_theory[i,:] = output['cell_number']
+            output = self.function_read_num_theory_scaler(self.result_s[i])
+            self.read_num_seq_theory[i,:] = output['read_number']
         
         #x_mean_tmp = np.sum(self.cell_num_seq_theory * np.tile(self.result_s, (self.seq_num, 1)).T, axis=0)
         #x_mean = x_mean_tmp / np.sum(self.cell_num_seq_theory, axis=0)
-        x_mean_tmp = np.sum(self.cell_num_seq * np.tile(self.result_s, (self.seq_num, 1)).T, axis=0)
-        x_mean = x_mean_tmp / np.sum(self.cell_num_seq, axis=0)
-
-        self.x_mean_seq_dict[k_iter] = x_mean - x_mean[0]
-        #self.x_mean_seq_dict[k_iter] = x_mean
-
-        self.read_num_seq_theory = self.cell_num_seq_theory * self.ratio
+        #self.x_mean_seq_dict[k_iter] = x_mean - x_mean[0]
+        
 
         
     
@@ -309,10 +294,9 @@ class FitSeq:
     ##########
     def function_run_iteration(self):
         """
-        run a single interation
+        Run a single interation
+        Run optimization for each lineages to find their optimized s
         """
-        # Calculate proability for each lineage to find adaptive lineages, 
-        # Then run optimization for adaptive lineages to find their optimized s & tau for adaptive lineages
         if self.parallelize:
             pool_obj = Pool() # might need to change processes=8
             output_tmp = pool_obj.map(self.function_parallel, tqdm(range(self.lineages_num)))
@@ -333,9 +317,10 @@ class FitSeq:
         self.prior_loglikelihood = np.zeros(self.lineages_num)
         for i in range(self.lineages_num):
             self.read_num_seq_lineage = self.read_num_seq[i, :]
-            self.cell_num_seq_lineage = self.cell_num_seq[i, :]
-            self.prior_loglikelihood[i] = self.function_prior_loglikelihood_scaler(self.result_s[i])
-
+            #self.prior_loglikelihood[i] = self.function_prior_loglikelihood_scaler(self.result_s[i])
+            self.prior_loglikelihood[i] = self.function_prior_loglikelihood_scaler_approx(self.result_s[i])
+            
+                    
 
 
     #####
@@ -379,8 +364,10 @@ class FitSeq:
         self.prior_loglikelihood = np.zeros(self.lineages_num, dtype=float)
         self.read_num_seq_theory = np.zeros((self.lineages_num, self.seq_num), dtype=float)
         
-
-        # change this to the following:
+        # choice_1 (without linear regression)
+        #self.x_mean_seq_dict = {0: 1e-8 * np.ones(self.seq_num, dtype=float)}
+        
+        # choice_2 (with linear regression)
         # linear regression of the first two time points:        
         if self.regression_num == 2:
             tmp = (self.read_freq_seq[:, 1] - self.read_freq_seq[:, 0]) / (self.t_seq[1] - self.t_seq[0])
@@ -391,10 +378,8 @@ class FitSeq:
         tmp = tmp - np.dot(self.read_freq_seq[:, 0], tmp)  # Normalization
         tmp = np.tile(tmp, (self.seq_num, 1)).T
         self.x_mean_seq = np.sum(tmp * self.read_freq_seq, axis=0)
-        #self.x_mean_seq = np.exp(self.x_mean_seq) - 1
-
-        #self.x_mean_seq_dict = {0: 1e-8 * np.ones(self.seq_num, dtype=float)}
         self.x_mean_seq_dict = {0: self.x_mean_seq}
+        
 
         for k_iter in range(1, self.max_iter_num+1):
             start_iter = time.time()

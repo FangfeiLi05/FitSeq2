@@ -2,16 +2,16 @@
 import numpy as np
 import pandas as pd
 import argparse
-import fitseq2_methods_v1
+import fitseq2_methods
 
 # try running with command
-# python3 ./fitseq2_methods_v1.py -i ./simu_0_EvoSimulation_Read_Number.csv -t ./fitmut_input_time_points.csv -o test
+# python3 ./fitseq2_methods.py -i simu_0_EvoSimulation_Read_Number.csv -t fitmut_input_time_points.csv -o test
 
 ###########################
 ##### PARSE ARGUMENTS #####
 ###########################
 
-parser = argparse.ArgumentParser(description='Estimate fitness and establishment time of spontaneous adaptive mutations in a competitive pooled growth experiment', 
+parser = argparse.ArgumentParser(description='Estimate fitness of phenotypes in a competitive pooled growth experiment', 
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
 parser.add_argument('-i', '--input', type=str, required=True,
@@ -60,15 +60,15 @@ opt_algorithm = args.opt_algorithm
 max_iter_num = args.maximum_iteration_number
 output_filename = args.output_filename
 
-my_obj = fitseq2_methods_v1.FitSeq(read_num_seq = read_num_seq,
-                                   t_seq = t_seq,
-                                   cell_depth_seq = cell_depth_seq,
-                                   delta_t = delta_t,
-                                   c = c,
-                                   opt_algorithm = opt_algorithm,
-                                   max_iter_num = max_iter_num,
-                                   parallelize = parallelize,
-                                   output_filename = output_filename)
+my_obj = fitseq2_methods.FitSeq(read_num_seq = read_num_seq,
+                                t_seq = t_seq,
+                                cell_depth_seq = cell_depth_seq,
+                                delta_t = delta_t,
+                                c = c,
+                                opt_algorithm = opt_algorithm,
+                                max_iter_num = max_iter_num,
+                                parallelize = parallelize,
+                                output_filename = output_filename)
 
 
 my_obj.function_main()

@@ -2,10 +2,10 @@
 import numpy as np
 import pandas as pd
 import argparse
-import fitseqsimu_methods_v1
+import fitseqsimu_methods
 
 # try running with command 
-#python fitmutsimu_methods_v1.py -l 100000 -t simu_input_time_points.csv -s simu_input_mutation_fitness.csv -o test
+#python fitseqsimu_run.py -l 100000 -t simu_input_time_points.csv -s simu_input_mutation_fitness.csv -o test
 
 
 ###########################
@@ -49,13 +49,13 @@ dna_copies = args.dna_copies
 pcr_cycles = args.pcr_cycles
 output_filename = args.output_filename
 
-my_obj = fitseqsimu_methods_v1.FitSeqSimu(t_seq = t_seq,
-                                          read_num_average_seq_bundle = read_num_average_seq_bundle,
-                                          s_array = s_array,
-                                          n0_array = n0_array, 
-                                          dna_copies = dna_copies,
-                                          pcr_cycles = pcr_cycles,
-                                          output_filename = output_filename)
+my_obj = fitseqsimu_methods.FitSeqSimu(t_seq = t_seq,
+                                       read_num_average_seq_bundle = read_num_average_seq_bundle,
+                                       s_array = s_array,
+                                       n0_array = n0_array,
+                                       dna_copies = dna_copies,
+                                       pcr_cycles = pcr_cycles,
+                                       output_filename = output_filename)
 
 my_obj.function_main()
 
