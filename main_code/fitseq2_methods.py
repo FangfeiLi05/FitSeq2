@@ -389,11 +389,11 @@ class FitSeq:
             prior_loglikelihood_sum = np.sum(self.prior_loglikelihood)
             self.prior_loglikelihood_list.append(prior_loglikelihood_sum)
             if len(self.prior_loglikelihood_list) >= 2:
-               stop_check = self.prior_loglikelihood_list[-1] - self.prior_loglikelihood_list[-2]
-               print(stop_check)
-               if stop_check < 0:
-                   self.function_save_data(output_result_old)      
-                   break
+                stop_check = self.prior_loglikelihood_list[-1] - self.prior_loglikelihood_list[-2]
+                print(stop_check)
+                if stop_check < 0:
+                    self.function_save_data(output_result_old)      
+                    break
  
             #####
             end_iter = time.time()
