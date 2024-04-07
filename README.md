@@ -1,7 +1,7 @@
 [![python](https://img.shields.io/badge/Python-3.12-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)
 [![jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626.svg?style=flat&logo=Jupyter)](https://jupyterlab.readthedocs.io/en/stable)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![FangfeiLi05 github](https://img.shields.io/badge/GitHub-FangfeiLi05-181717.svg?style=flat&logo=github)](https://github.com/my)
+[![my github](https://img.shields.io/badge/GitHub-my-181717.svg?style=flat&logo=github)](https://github.com/my)
 
 
 # Fit-Seq2 Tutorial
