@@ -1,32 +1,36 @@
 #!/usr/bin/env python3
-from hashlib import new
+import csv
+import copy
+import time
+import itertools
+import argparse
+
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+from multiprocess import Pool
 from scipy import special
 from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from scipy.optimize import differential_evolution
-import itertools
-import csv
-import time
-from multiprocess import Pool
-from tqdm import tqdm
-import copy
+
 
 
 # fitness inference object
-class FitSeq:
-    def __init__(self, read_num_seq,
-                       t_seq,
-                       cell_depth_seq,
-                       delta_t, 
-                       c,
-                       opt_algorithm,
-                       max_iter_num,
-                       parallelize,
-                       output_filename):
+class FitSeq2:
+    def __init__(self,
+            read_num_seq,
+            t_seq,
+            cell_depth_seq,
+            delta_t,
+            c,
+            opt_algorithm,
+            max_iter_num,
+            parallelize,
+            output_filenamepath_prefix
+            ):
         
-        # preparing inputs
+        # Preparing inputs
         self.read_num_seq = read_num_seq
         self.read_depth_seq = np.sum(self.read_num_seq, axis=0)
         self.lineages_num = np.shape(self.read_num_seq)[0]
@@ -34,25 +38,33 @@ class FitSeq:
         self.seq_num = len(self.t_seq)
         self.cell_depth_seq = cell_depth_seq
         self.ratio = np.true_divide(self.read_depth_seq, self.cell_depth_seq)
-        self.read_num_seq[self.read_num_seq < 1] = 1 # approximate distribution is not accurate when r < 1
+        self.read_num_seq[self.read_num_seq < 1] = 1
+        # approximate distribution is not accurate when r < 1
 
         self.delta_t = delta_t
         self.opt_algorithm = opt_algorithm
         self.max_iter_num = max_iter_num
         self.parallelize = parallelize
-        self.output_filename = output_filename
+        self.output_filenamepath_prefix = output_filenamepath_prefix
 
-        # set bounds for the optimization
-        self.bounds = Bounds([1e-8, -1], [np.max(self.read_num_seq[:,0])/self.ratio[0]*10, 1])
+        # Set bounds for the optimization
+        self.bounds = Bounds(
+            [1e-8, -1],
+            [np.max(self.read_num_seq[:,0])/self.ratio[0]*10, 1]
+            )
         
-        # define other variables
+        # Define other variables
         self.kappa_seq = 2.5 * np.ones(self.seq_num)
         
         #self.regression_num = 2
         self.read_freq_seq = self.read_num_seq / self.read_depth_seq
 
-        #self.noise_c = c / self.delta_t # self.noise_c: noise per generation, c: noise per cycle           
-        self.noise_c_seq = (self.t_seq[1:] - self.t_seq[:-1]) / self.delta_t * c # per cycle
+        #self.noise_c = c / self.delta_t
+        # noise_c: noise per generation
+        # c: noise per cycle
+        
+        self.noise_c_seq = (self.t_seq[1:] - self.t_seq[:-1]) / self.delta_t * c
+        # noise_c_seq: noise per cycle
         
         read_num_mean = np.mean(self.read_num_seq[:,0])
         cell_num_mean = self.cell_depth_seq[0] / self.lineages_num
@@ -61,7 +73,6 @@ class FitSeq:
         
 
 
-    ##########
     def function_sum_term(self):
         """
         Pre-calculate a term (i.e. sum_term) to reduce calculations in estimating the number of reads.
@@ -73,7 +84,6 @@ class FitSeq:
 
 
 
-    ##########
     def function_epsilon_term(self, s):
         """ """
         epsilon_term_t_seq = np.zeros(self.seq_num-1, dtype=float) # from tkminus1 to tk
@@ -89,7 +99,6 @@ class FitSeq:
 
 
 
-    ##########
     def function_prior_loglikelihood_scaler_subfunction(self, n0, s):
         """" """
         output_epsilon_term = self.function_epsilon_term(s)  # need to add this!!!
@@ -129,7 +138,6 @@ class FitSeq:
         
 
 
-    ##########
     def function_prior_loglikelihood_scaler(self, n0, s):
         """
         Calculate log-likelihood value of a lineage given s and n0.
@@ -155,7 +163,6 @@ class FitSeq:
      
     
 
-    ##########
     def function_prior_loglikelihood_opt(self, x):
         """
         Calculate log-likelihood value of a lineage given s and n0 in optimization
@@ -166,7 +173,6 @@ class FitSeq:
 
 
 
-    ##########
     def function_parallel(self, i): 
         """
         i: lineage label
@@ -175,16 +181,20 @@ class FitSeq:
         self.read_num_seq_lineage = self.read_num_seq[i, :]
         
         if self.opt_algorithm == 'differential_evolution':
-            opt_output = differential_evolution(func = self.function_prior_loglikelihood_opt,
-                                                seed = 1,
-                                                bounds = self.bounds)
+            opt_output = differential_evolution(
+                func = self.function_prior_loglikelihood_opt,
+                seed = 1,
+                bounds = self.bounds
+                )
 
         elif self.opt_algorithm == 'nelder_mead': 
-            opt_output = minimize(self.function_prior_loglikelihood_opt, 
-                                  x0 = [100, 0.1] ,
-                                  method = 'Nelder-Mead', 
-                                  bounds = self.bounds, 
-                                  options = {'ftol': 1e-8, 'disp': False, 'maxiter': 500})
+            opt_output = minimize(
+                self.function_prior_loglikelihood_opt,
+                x0 = [100, 0.1] ,
+                method = 'Nelder-Mead',
+                bounds = self.bounds,
+                options = {'ftol': 1e-8, 'disp': False, 'maxiter': 500}
+                )
 
         n0_opt = opt_output.x[0]
         s_opt = opt_output.x[1]
@@ -193,7 +203,6 @@ class FitSeq:
 
     
     
-    ##########
     def function_estimation_error_lineage(self, n0_opt, s_opt):
         """
         Estimate estimation error of a lineage for optimization
@@ -219,14 +228,19 @@ class FitSeq:
         v1, v2 = eigvecs[:,0], eigvecs[:,1]
         lambda1, lambda2 = np.abs(eigs[0]), np.abs(eigs[1])
         
-        error_n0_lineage =  max(np.abs(v1[0]/np.sqrt(lambda1)), np.abs(v2[0]/np.sqrt(lambda2)))
-        error_s_lineage = max(np.abs(v1[1]/np.sqrt(lambda1)), np.abs(v2[1]/np.sqrt(lambda2)))
+        error_n0_lineage =  max(
+            np.abs(v1[0]/np.sqrt(lambda1)),
+            np.abs(v2[0]/np.sqrt(lambda2))
+            )
+        error_s_lineage = max(
+            np.abs(v1[1]/np.sqrt(lambda1)),
+            np.abs(v2[1]/np.sqrt(lambda2))
+            )
 
         return error_n0_lineage, error_s_lineage
 
     
    
-    ##########
     def function_estimation_error(self):
         for i in range(self.lineages_num):
             self.read_num_seq_lineage = self.read_num_seq[i, :]
@@ -262,9 +276,6 @@ class FitSeq:
 
         
 
-        
-    
-    ##########
     def function_run_iteration(self):
         """
         Run a single interation
@@ -288,8 +299,6 @@ class FitSeq:
         
 
      
-
-    ##########
     def function_prior_loglikelihood_iteration(self):
         """ """
         self.prior_loglikelihood = np.zeros(self.lineages_num)
@@ -300,34 +309,33 @@ class FitSeq:
 
 
 
-    #####
     def function_save_data(self, output_result):
         """
         Save data according to label: if it's saving a step or the final data
         """
         tmp_1 = output_result['FitSeq_Result']
         tmp = list(itertools.zip_longest(*list(tmp_1.values())))
-        with open(self.output_filename + '_FitSeq_Result.csv', 'w') as f:
+        filenamepath = '{}_FitSeq_Result.csv'.format(self.output_filenamepath_prefix)
+        with open(filenamepath, 'w') as f:
             w = csv.writer(f)
             w.writerow(tmp_1.keys())
             w.writerows(tmp)
  
         tmp_2 = output_result['Mean_fitness_Result']
         tmp = list(itertools.zip_longest(*list(tmp_2.values())))
-        with open(self.output_filename + '_Mean_fitness_Result.csv', 'w') as f:
+        filenamepath = '{}_Mean_fitness_Result.csv'.format(self.output_filenamepath_prefix)
+        with open(filenamepath, 'w') as f:
             w = csv.writer(f)
             w.writerow(tmp_2.keys())
             w.writerows(tmp)
         
         tmp_3 = output_result['Read_Number_Estimated']
         tmp = pd.DataFrame(tmp_3.astype(int))
-        tmp.to_csv(self.output_filename + '_Read_Number_Estimated.csv',
-                   index=False, header=False)
+        filenamepath = '{}_Read_Number_Estimated.csv'.format(self.output_filenamepath_prefix)
+        tmp.to_csv(filenamepath, index=False, header=False)
          
         
-            
-    #####
-    def function_main(self):
+    def seq2(self):
         """
         main function
         """
@@ -369,16 +377,20 @@ class FitSeq:
 
             self.x_mean_seq = self.x_mean_seq_dict[k_iter-1]
      
-            output_result_old = {'FitSeq_Result': {'Fitness': np.copy(self.result_s), 
-                                                    #'Error_Fitness': np.copy(self.error_s),
-                                                    'Cell_Number': np.copy(self.result_n0),
-                                                    #'Error_Cell_Number': np.copy(self.error_n0),
-                                                    'Log_Likelihood_Value': np.copy(self.prior_loglikelihood), 
-                                                    'Mean_Fitness': np.copy(self.x_mean_seq_dict[k_iter-1]), # prior
-                                                    'Kappa_Value': np.copy(self.kappa_seq), 
-                                                    'Inference_Time': np.copy(self.iter_timing_list)}, 
-                                 'Mean_fitness_Result': copy.deepcopy(self.x_mean_seq_dict),
-                                 'Read_Number_Estimated': np.copy(self.read_num_seq_theory)}
+            output_result_old = {
+                'FitSeq_Result': {
+                    'Fitness': np.copy(self.result_s),
+                    #'Error_Fitness': np.copy(self.error_s),
+                    'Cell_Number': np.copy(self.result_n0),
+                    #'Error_Cell_Number': np.copy(self.error_n0),
+                    'Log_Likelihood_Value': np.copy(self.prior_loglikelihood),
+                    'Mean_Fitness': np.copy(self.x_mean_seq_dict[k_iter-1]), # prior
+                    'Kappa_Value': np.copy(self.kappa_seq),
+                    'Inference_Time': np.copy(self.iter_timing_list)
+                    },
+                'Mean_fitness_Result': copy.deepcopy(self.x_mean_seq_dict),
+                'Read_Number_Estimated': np.copy(self.read_num_seq_theory)
+                }
                
             self.function_sum_term()
             self.function_run_iteration()
@@ -395,7 +407,6 @@ class FitSeq:
                     self.function_save_data(output_result_old)      
                     break
  
-            #####
             end_iter = time.time()
             iter_timing = np.round(end_iter - start_iter, 5)
             self.iter_timing_list.append(iter_timing)
@@ -405,3 +416,134 @@ class FitSeq:
         end = time.time()
         inference_timing = np.round(end - start, 5)
         print(f'Total computing time: {inference_timing} seconds',flush=True)
+
+
+
+def process(
+        read_num_seq,
+        t_seq,
+        cell_depth_seq,
+        delta_t,
+        c,
+        opt_algorithm,
+        max_iter_num,
+        parallelize,
+        output_filenamepath_prefix
+        ):
+    """
+    """
+    my_obj = FitSeq2(
+        read_num_seq,
+        t_seq,
+        cell_depth_seq,
+        delta_t,
+        c,
+        opt_algorithm,
+        max_iter_num,
+        parallelize,
+        output_filenamepath_prefix
+        )
+    
+    my_obj.seq2()
+    
+    
+    
+
+def main():
+    """
+    """
+    parser = argparse.ArgumentParser(
+        description='Estimate fitness of phenotypes in a competitive pooled growth experiment',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+ 
+    parser.add_argument(
+        '-i', '--input',
+        type=str,
+        required=True,
+        help='a .csv file: with each column being the read number per barcode at each sequenced time-point'
+        )
+
+    parser.add_argument(
+    '-t', '--t_seq',
+    type=str,
+    required=True,
+    help='a .csv file of 2 columns:'
+         '1st column: sequenced time-points evaluated in number of generations, '
+         '2nd column: total effective number of cells of the population for each sequenced time-point.'
+         )
+
+    parser.add_argument(
+        '-dt', '--delta_t',
+        type=float,
+        required=True,
+        help='number of generations between bottlenecks'
+        )
+
+    parser.add_argument(
+        '-c', '--c',
+        type=float,
+        default=1,
+        help='half of variance introduced by cell growth and cell transfer'
+        )
+
+    parser.add_argument(
+        '-a', '--opt_algorithm',
+        type=str,
+        default='differential_evolution',
+        choices = ['differential_evolution', 'nelder_mead'],
+        help='choose optmization algorithm'
+        )
+
+    parser.add_argument(
+        '-n', '--maximum_iteration_number',
+        type=int,
+        default=50,
+        help='maximum number of iterations'
+        )
+
+    parser.add_argument(
+        '-p', '--parallelize',
+        type=bool,
+        default=True,
+        help='use multiprocess module to parallelize inference across lineages'
+        )
+                    
+    parser.add_argument(
+        '-o', '--output_filenamepath_prefix',
+        type=str,
+        default='output',
+        help='prefix of output .csv files'
+        )
+
+    args = parser.parse_args()
+    
+    
+    read_num_seq = np.array(pd.read_csv(args.input, header=None), dtype=float)
+
+    csv_input = pd.read_csv(args.t_seq, header=None)
+    t_seq = np.array(csv_input[0][~pd.isnull(csv_input[0])], dtype=float)
+    cell_depth_seq = np.array(csv_input[1][~pd.isnull(csv_input[1])], dtype=float)
+
+    delta_t = args.delta_t
+    c = args.c # per cycle
+    parallelize = args.parallelize
+    opt_algorithm = args.opt_algorithm
+    max_iter_num = args.maximum_iteration_number
+    output_filenamepath_prefix = args.output_filenamepath_prefix
+
+    process(
+        read_num_seq,
+        t_seq,
+        cell_depth_seq,
+        delta_t,
+        c,
+        opt_algorithm,
+        max_iter_num,
+        parallelize,
+        output_filenamepath_prefix
+        )
+        
+
+if __name__=="__main__":
+    main()
