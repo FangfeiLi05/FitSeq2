@@ -52,19 +52,10 @@ conda deactivate
 ```
 
 Both of the two modules `GrowthSimulation` and `FitSeq2` can be run in Python (as a module) or in Terminal (as a Python script). To make the running of the two modules more easy, we add the source code directory [src](./src): (a) to PYTHONPATH, (b) to the system path. 
-
+Add the following two lines to the file ".zprofile",
 ```console
-# Open the file ".zprofile" (probably others) in home directory
-vi ~/.zprofile
-
-# Add the following two lines to the file ".zprofile"
 export PATH="</path/to/FitSeq2/src>:$PATH"
 export PYTHONPATH="$PYTHONPATH:</path/to/FitSeq2/src>"
-# You should specify </path/to/FitSeq2/src>, e.g, 
-# /Users/fangfeili/Documents/GitHub_Personal/FitSeq2/src
-
-# Update the file ".zprofile"
-source ~/.zprofile
 ```
 
 By doing (a), we can import the modules `GrowthSimulation` and`FitSeq2` in Python, without using `sys.path.append(source_code_directory)`. By doing (b), we can run the Python scripts `GrowthSimulation.py` and `FitSeq2.py` in Terminal without specifying its full path. 
