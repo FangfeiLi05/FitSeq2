@@ -51,7 +51,7 @@ python3 -m ipykernel install --user --name=fitseq2
 conda deactivate
 ```
 
-Both of the two modules `GrowthSimulation` and `FitSeq2` can be run in Python (as a module) or in Terminal (as a Python script). To make the running of the two modules more easy, we add the source code directory [src](./src) to: (a)the PYTHONPATH, (b) the system path. 
+Both of the two modules `GrowthSimulation` and `FitSeq2` can be run in Python (as a module) or in Terminal (as a Python script). To make the running of the two modules more easy, we add the source code directory [src](./src): (a) to PYTHONPATH, (b) to the system path. 
 
 ```console
 # Open the file ".zprofile" (probably others) in home directory
