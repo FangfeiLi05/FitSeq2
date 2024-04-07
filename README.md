@@ -87,7 +87,7 @@ A walkthrough is included in [this jupyter notebook](https://github.com/FangfeiL
 
 #### For Help
 ```
-python3 GrowthSimulation.py --help
+GrowthSimulation.py --help
 ```
 
 ##### Example
@@ -124,7 +124,7 @@ GrowthSimulation.py -t ./example/simu_input_time_points.csv -s ./example/simu_in
 
 #### For Help
 ```
-python3 FitSeq2.py --help
+FitSeq2.py --help
 ```  
 
 #### Example
