@@ -7,16 +7,15 @@ import argparse
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from multiprocess import Pool
 from scipy import special
 from scipy.optimize import minimize
 from scipy.optimize import Bounds
 from scipy.optimize import differential_evolution
+from tqdm import tqdm
+from multiprocess import Pool
 
 
-
-# fitness inference object
+# Fitness inference object
 class FitSeq2:
     def __init__(self,
             read_num_seq,
@@ -72,7 +71,6 @@ class FitSeq2:
         
         
 
-
     def function_sum_term(self):
         """
         Pre-calculate a term (i.e. sum_term) to reduce calculations in estimating the number of reads.
@@ -93,9 +91,7 @@ class FitSeq2:
             epsilon_term_t_seq[k] =  sum_term_tkplus1_minus_tk * tmp_1
         
         epsilon_term_sqrt_t_seq = np.sqrt(epsilon_term_t_seq)
-        
         return {0: epsilon_term_t_seq, 1: epsilon_term_sqrt_t_seq}
-
 
 
 
@@ -148,9 +144,9 @@ class FitSeq2:
         tmp_theory = n0 * self.ratio[0]
         tmp_observed = self.read_num_seq_lineage[0]
         tmp_observed_reverse = 1/tmp_observed
-        ive_ele = 2* np.multiply(np.sqrt(np.multiply(tmp_theory, tmp_observed)), tmp_kappa_reverse)
+        ive_ele = 2*np.multiply(np.sqrt(np.multiply(tmp_theory, tmp_observed)), tmp_kappa_reverse)
         tmp_part1 = np.log(tmp_kappa_reverse)
-        tmp_part2 = 1/2 * np.log(np.multiply(tmp_theory, tmp_observed_reverse))
+        tmp_part2 = 1/2*np.log(np.multiply(tmp_theory, tmp_observed_reverse))
         tmp_part3 = -np.multiply(tmp_theory + tmp_observed, tmp_kappa_reverse)
         tmp_part4 = np.log(special.ive(1, ive_ele)) + ive_ele
 
@@ -315,7 +311,7 @@ class FitSeq2:
         """
         tmp_1 = output_result['FitSeq_Result']
         tmp = list(itertools.zip_longest(*list(tmp_1.values())))
-        filenamepath = '{}_FitSeq_Result.csv'.format(self.output_filenamepath_prefix)
+        filenamepath = '{}_FitSeq2_Result.csv'.format(self.output_filenamepath_prefix)
         with open(filenamepath, 'w') as f:
             w = csv.writer(f)
             w.writerow(tmp_1.keys())
@@ -323,7 +319,9 @@ class FitSeq2:
  
         tmp_2 = output_result['Mean_fitness_Result']
         tmp = list(itertools.zip_longest(*list(tmp_2.values())))
-        filenamepath = '{}_Mean_fitness_Result.csv'.format(self.output_filenamepath_prefix)
+        filenamepath = '{}_FitSeq2_Result_Mean_fitness.csv'.format(
+            self.output_filenamepath_prefix
+            )
         with open(filenamepath, 'w') as f:
             w = csv.writer(f)
             w.writerow(tmp_2.keys())
@@ -331,9 +329,12 @@ class FitSeq2:
         
         tmp_3 = output_result['Read_Number_Estimated']
         tmp = pd.DataFrame(tmp_3.astype(int))
-        filenamepath = '{}_Read_Number_Estimated.csv'.format(self.output_filenamepath_prefix)
+        filenamepath = '{}_FitSeq2_Result_Read_Number_Estimated.csv'.format(
+            self.output_filenamepath_prefix
+            )
         tmp.to_csv(filenamepath, index=False, header=False)
          
+        
         
     def seq2(self):
         """
@@ -373,7 +374,7 @@ class FitSeq2:
 
         for k_iter in range(1, self.max_iter_num+1):
             start_iter = time.time()
-            print(f'--- iteration {k_iter} ...')
+            print('--- iteration {} ...'.format(k_iter))
 
             self.x_mean_seq = self.x_mean_seq_dict[k_iter-1]
      
@@ -406,16 +407,18 @@ class FitSeq2:
                 if stop_check < 0:
                     self.function_save_data(output_result_old)      
                     break
+                elif k_iter==self.max_iter_num:
+                    self.function_save_data(output_result_old)
  
             end_iter = time.time()
             iter_timing = np.round(end_iter - start_iter, 5)
             self.iter_timing_list.append(iter_timing)
-            print(f'    computing time: {iter_timing} seconds', flush=True)
+            print('    computing time: {} seconds'.format(iter_timing), flush=True)
         
         
         end = time.time()
         inference_timing = np.round(end - start, 5)
-        print(f'Total computing time: {inference_timing} seconds',flush=True)
+        print('Total computing time: {} seconds'.format(inference_timing), flush=True)
 
 
 
@@ -499,7 +502,7 @@ def main():
         '-n', '--maximum_iteration_number',
         type=int,
         default=50,
-        help='maximum number of iterations'
+        help='maximum number of iterations, need to be >= 2'
         )
 
     parser.add_argument(
@@ -529,9 +532,12 @@ def main():
     c = args.c # per cycle
     parallelize = args.parallelize
     opt_algorithm = args.opt_algorithm
-    max_iter_num = args.maximum_iteration_number
     output_filenamepath_prefix = args.output_filenamepath_prefix
-
+    
+    if args.maximum_iteration_number < 2:
+        print('The maximum number of iterations need to be >=2, force changing it to 2!')
+    max_iter_num = max(args.maximum_iteration_number, 2)
+    
     process(
         read_num_seq,
         t_seq,
