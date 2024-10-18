@@ -113,14 +113,16 @@ GrowthSimulation.py -t ./example/simu_input_time_points.csv -s ./example/simu_in
 
 #### Outputs
 - `output_filename_FitSeq_Result.csv`: a .csv file, with
-  + 1st column of .csv: estimated fitness of each genotype
-  + 2rd column of .csv: estimated initial cell number each genotype
-  + 3th column of .csv: maximized likelihood value (log-scale) for each genotype
-  + 4th column of .csv: estimated mean fitness per sequenced time point
-  + 5th column of .csv: value of noise parameter (kappa) per sequenced time point
-  + 6th column of .csv: inference time for each iteration
+  + estimated fitness, per growth cycle, of each genotype. The multiplicative change in frequency of a genotype over one growth cycle is $$e^{s-\bar s}$$ where $$s$$ is the per-cycle fitness. For genotypes where inference is unreliable due to very low read number, the estimated fitness will typically be at its lower limit, which is $$-\Delta t$$ where $$\Delta t$$ is the cycle length in generations.
+  + error in fitness estimate
+  + estimated initial cell number each genotype
+  + error in initial cell number estimate
+  + maximized likelihood value (log-scale) for each genotype
+  + estimated mean fitness per sequenced time point
+  + value of noise parameter (kappa) at each sequenced time point
+  + inference time for each iteration
 - `output_filename_Mean_fitness_Result.csv`: estimated mean fitness at each iteration
-- `output_filename_Read_Number_Estimated.csv`: estimated read number per genotype for each time point
+- `output_filename_Read_Number_Estimated.csv`: inferred read number per genotype for each time point (inferred cell number multiplied by read depth)
 
 #### For Help
 ```
