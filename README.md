@@ -113,7 +113,7 @@ GrowthSimulation.py -t ./example/simu_input_time_points.csv -s ./example/simu_in
 
 #### Outputs
 - `output_filename_FitSeq_Result.csv`: a .csv file, with
-  + estimated fitness, per growth cycle, of each genotype. The multiplicative change in frequency of a genotype over one growth cycle is $`e^{s-\bar s}`$ where $`s`$ is the per-cycle fitness. For genotypes where inference is unreliable due to very low read number, the estimated fitness will typically be at its lower limit, which is $`-\Delta t`$ where $`\Delta t`$ is the cycle length in generations.
+  + estimated fitness, per growth cycle, of each genotype. The multiplicative change in frequency of a genotype over one growth cycle is $`\exp(s-\bar{s})`$ where $`s`$ is the per-cycle fitness. For genotypes where inference is unreliable due to very low read number, the estimated fitness will typically be at its lower limit, which is $`-\Delta t`$ where $`\Delta t`$ is the cycle length in generations.
   + error in fitness estimate
   + estimated initial cell number each genotype
   + error in initial cell number estimate
