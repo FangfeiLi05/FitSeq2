@@ -111,13 +111,15 @@ class FitSeq2:
         r0_th = n0 * self.ratio[0] # theory
         r0_obs = self.r_lineage[0] # observed
 
+        # use a negative binomial prior for n0 --- this models an overdispersed Poisson distribution where the
+        # variance is a multiple of the mean as expected from a branching process
         r0_loglikelihood = nbinom.logpmf(r0_obs,r0_th/(beta-1),1/beta)
-        # if r0_obs==0:
-        #     r0_loglikelihood = np.log(1/beta) - r0_th/beta # + np.log(r0_th/beta**2)
-        # else:
-        #     ive_arg = 2*np.sqrt(r0_th*r0_obs)/beta
-        #     log_bessel = np.log(special.ive(1, ive_arg)) + ive_arg
-        #     r0_loglikelihood = np.log(1/beta) + 1/2*np.log(r0_th/r0_obs) - (r0_th+r0_obs)/beta + log_bessel
+#         if r0_obs==0:
+#             r0_loglikelihood = np.log(1/beta) - r0_th/beta # + np.log(r0_th/beta**2)
+#         else:
+#             ive_arg = 2*np.sqrt(r0_th*r0_obs)/beta
+#             log_bessel = np.log(special.ive(1, ive_arg)) + ive_arg
+#             r0_loglikelihood = np.log(1/beta) + 1/2*np.log(r0_th/r0_obs) - (r0_th+r0_obs)/beta + log_bessel
 
         integrand_log = self.traj_LL_from_n(n0, s)['optimal_value'] + r0_loglikelihood
         return integrand_log
@@ -127,7 +129,7 @@ class FitSeq2:
         Calculate log-likelihood value of a lineage given s and n0 in optimization
         """
         output = self.traj_LL(x[0], x[1])
-        return -output #minimization only in python
+        return -output # minimization only in python
      
     def optimize_n0_s(self, i): 
         """
@@ -229,7 +231,7 @@ class FitSeq2:
         
         if self.parallelize:
             pool_obj = Pool() # might need to change processes=8
-            output0 = pool_obj.map(self.parallel, tqdm(range(self.lineages_num)))
+            output0 = pool_obj.map(self.optimize_n0_s, tqdm(range(self.lineages_num)))
             pool_obj.close()
             output = np.array(output0)
             self.result_n0 = output[:,0]
@@ -237,7 +239,7 @@ class FitSeq2:
         else:
             self.result_n0 = np.zeros(self.lineages_num)
             self.result_s = np.zeros(self.lineages_num)
-            for i in range(self.lineages_num):
+            for i in tqdm(range(self.lineages_num)):
                 self.result_n0[i],self.result_s[i] = self.optimize_n0_s(i)
      
     def loglikelihood_iteration(self):

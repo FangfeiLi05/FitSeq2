@@ -314,7 +314,7 @@ class FitSeq:
             self.result_s = np.array(output_tmp, dtype=float)
 
         else:
-            for i in range(self.lineages_num):
+            for i in tqdm(range(self.lineages_num)):
                 self.result_s[i] = self.function_parallel(i)
         
 
@@ -506,9 +506,9 @@ def main():
 
     parser.add_argument(
         '-p', '--parallelize',
-        type=bool,
-        default=True,
-        help='whether to use multiprocess module to parallelize inference across lineages'
+        type=int,
+        default=0,
+        help='use multiprocess module to parallelize inference across lineages'
         )
                     
     parser.add_argument(
@@ -527,7 +527,7 @@ def main():
     t_seq = np.array(csv_input[0][~pd.isnull(csv_input[0])], dtype=float)
     cell_depth_seq = np.array(csv_input[1][~pd.isnull(csv_input[1])], dtype=float)
    
-    parallelize = args.parallelize
+    parallelize = bool(int(args.parallelize))
     opt_algorithm = args.opt_algorithm
     output_filenamepath_prefix = args.output_filenamepath_prefix
         
